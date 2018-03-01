@@ -7,7 +7,23 @@ dns_rest_dns_add() {
   fulldomain=$1
   txtvalue=$2
   _info "Using REST DNS APi"
+  
+  REST_DNS_ENDPOINT="${REST_DNS_ENDPOINT:-$(_readaccountconf_mutable REST_DNS_ENDPOINT)}"
+  REST_DNS_USER="${REST_DNS_USER:-$(_readaccountconf_mutable REST_DNS_USER)}"
+  REST_DNS_PASS="${REST_DNS_PASS:-$(_readaccountconf_mutable REST_DNS_PASS)}"
+
+  export _H2="Content-Type: application/json"
+  method="POST"
+
+  if [ -z "$REST_DNS_USER" ] || [ -z "$REST_DNS_PASS" ]; then
+    REST_DNS_USER=""
+    REST_DNS_PASS=""
+    _err "You haven't specified a rest_dns api key and account yet."
+    _err "Please create your key and try again."
+    return 1
+  fi
   _get_auth
+  export _H1="Authorization: JWT ${_jwt_token}"
 
   if ! _get_root "$fulldomain"; then
       _err "Domain does not exist."
@@ -19,7 +35,9 @@ dns_rest_dns_add() {
   _saveaccountconf REST_DNS_USER "${REST_DNS_USER}"
   _saveaccountconf REST_DNS_PASS "${REST_DNS_PASS}"
 
-  curl -H "Authorization: JWT ${_jwt_token}" $REST_DNS_ENDPOINT/api/v1/$_domain/$fulldomain --data '{ "request_type": "add", "ttl": "60", "type": "TXT", "target": "${txtvalue}" }'
+  _endpoint="$REST_DNS_ENDPOINT/api/v1/$_domain/$fulldomain."
+  _data="{\"request_type\":\"add\", \"ttl\": \"60\", \"type\": \"TXT\", \"target\": \"${txtvalue}\"}"
+  _response="$(_post "$_data" "$_endpoint" "" "$method")"
   return 0
 }
 
@@ -27,15 +45,33 @@ dns_rest_dns_add() {
 dns_rest_dns_rm() {
   fulldomain=$1
   txtvalue=$2
-  _info "Using REST DNS API"
+  _info "Using REST DNS APi"
+  
+  REST_DNS_ENDPOINT="${REST_DNS_ENDPOINT:-$(_readaccountconf_mutable REST_DNS_ENDPOINT)}"
+  REST_DNS_USER="${REST_DNS_USER:-$(_readaccountconf_mutable REST_DNS_USER)}"
+  REST_DNS_PASS="${REST_DNS_PASS:-$(_readaccountconf_mutable REST_DNS_PASS)}"
+
+  export _H2="Content-Type: application/json"
+  method="POST"
+
+  if [ -z "$REST_DNS_USER" ] || [ -z "$REST_DNS_PASS" ]; then
+    REST_DNS_USER=""
+    REST_DNS_PASS=""
+    _err "You haven't specified a rest_dns api key and account yet."
+    _err "Please create your key and try again."
+    return 1
+  fi
   _get_auth
+  export _H1="Authorization: JWT ${_jwt_token}"
 
   if ! _get_root "$fulldomain"; then
       _err "Domain does not exist."
       return 1
   fi
 
-  curl -H "Authorization: JWT ${_jwt_token}" $REST_DNS_ENDPOINT/api/v1/$_domain/$fulldomain --data '{ "request_type": "del", "type": "TXT", "target": "${txtvalue}" }'
+  _endpoint="$REST_DNS_ENDPOINT/api/v1/$_domain/$fulldomain."
+  _data="{\"request_type\":\"del\", \"ttl\": \"60\", \"type\": \"TXT\", \"target\": \"${txtvalue}\"}"
+  _response="$(_post "$_data" "$_endpoint" "" "$method")"
   return 0
 
 }
@@ -62,5 +98,8 @@ _get_root() {
 }
 
 _get_auth() {
-  _jwt_token=$(curl $REST_DNS_ENDPOINT/auth --data '{ "username": "${REST_DNS_USER}", "password": "${REST_DNS_PASS}" }' -H "Content-Type: application/json" 2>/dev/null | jq -r .access_token)
+  _data="{\"username\":\"$REST_DNS_USER\", \"password\":\"$REST_DNS_PASS\"}"
+  _endpoint=$REST_DNS_ENDPOINT/auth
+  _response="$(_post "$_data" "$_endpoint" "" "$method")"
+  _jwt_token=$(echo $_response | jq -r .access_token)
 }
