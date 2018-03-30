@@ -5339,7 +5339,7 @@ _uninstall_win_taskscheduler() {
 _createbasedir() {
   _real_file="$1"
   _base_path=$(dirname "$_real_file")
-  mkdir -p $"_base_path"
+  mkdir -p "$_base_path"
 }
 
 #confighome
