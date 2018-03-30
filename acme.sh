@@ -5243,6 +5243,7 @@ _installcert() {
     if [ -f "$_real_cert" ] && [ ! "$IS_RENEW" ]; then
       cp "$_real_cert" "$_backup_path/cert.bak"
     fi
+    _createbasedir "$_real_cert"
     cat "$CERT_PATH" >"$_real_cert" || return 1
   fi
 
@@ -5255,6 +5256,7 @@ _installcert() {
       if [ -f "$_real_ca" ] && [ ! "$IS_RENEW" ]; then
         cp "$_real_ca" "$_backup_path/ca.bak"
       fi
+      _createbasedir "$_real_ca"
       cat "$CA_CERT_PATH" >"$_real_ca" || return 1
     fi
   fi
@@ -5267,6 +5269,7 @@ _installcert() {
     if [ -f "$_real_key" ]; then
       cat "$CERT_KEY_PATH" >"$_real_key" || return 1
     else
+      _createbasedir "$_real_key"
       cat "$CERT_KEY_PATH" >"$_real_key" || return 1
       chmod 600 "$_real_key"
     fi
@@ -5277,6 +5280,7 @@ _installcert() {
     if [ -f "$_real_fullchain" ] && [ ! "$IS_RENEW" ]; then
       cp "$_real_fullchain" "$_backup_path/fullchain.bak"
     fi
+    _createbasedir "$_real_fullchain"
     cat "$CERT_FULLCHAIN_PATH" >"$_real_fullchain" || return 1
   fi
 
@@ -5358,6 +5362,12 @@ _uninstall_win_taskscheduler() {
     _info "Removing $_WINDOWS_SCHEDULER_NAME"
     echo SCHTASKS /delete /f /tn "$_WINDOWS_SCHEDULER_NAME" | cmd.exe >/dev/null
   fi
+}
+
+_createbasedir() {
+  _real_file="$1"
+  _base_path=$(dirname "$_real_file")
+  mkdir -p $"_base_path"
 }
 
 #confighome
